@@ -28,6 +28,12 @@ DATA_PATH = "output.tfrecords"
 
 # 定义输入队列得到训练数据，具体细节可以参考第7章。
 def get_input():
+    """
+    在TensorFlow 1.3中，Dataset API是放在contrib包中的：
+    tf.contrib.data.Dataset
+    而在TensorFlow 1.4中，Dataset API已经从contrib包中移除，变成了核心API的一员：
+    tf.data.Dataset
+    """
     dataset = tf.contrib.data.TFRecordDataset([DATA_PATH])
 
     # 定义数据解析格式。
@@ -53,6 +59,9 @@ def get_input():
     dataset = dataset.shuffle(buffer_size=10000)
     dataset = dataset.repeat(10)
     dataset = dataset.batch(BATCH_SIZE)
+    """
+    如何将这个dataset中的元素取出呢？方法是从Dataset中示例化一个Iterator，然后对Iterator进行迭代
+    """
     iterator = dataset.make_one_shot_iterator()
 
     features, labels = iterator.get_next()
@@ -115,6 +124,8 @@ def main(argv=None):
         for i in range(N_GPU):
             # 将优化过程指定在一个GPU上。
             with tf.device('/gpu:%d' % i):
+                # 在gpu设备上执行前向传播、计算损失、计算梯度；
+                # 梯度存入内存list tower_grads中
                 with tf.name_scope('GPU_%d' % i) as scope:
                     cur_loss = get_loss(x, y_, regularizer, scope, reuse_variables)
                     # 在第一次声明变量之后，将控制变量重用的参数设置为True。这样可以
